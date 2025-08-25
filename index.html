@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Débora Rebelatto - Dev</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'IBM Plex Mono', monospace;
+            background: #0a0a0a;
+            color: #00ff41;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .scanlines::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(transparent 50%, rgba(0, 255, 65, 0.02) 51%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .terminal {
+            max-width: 900px;
+            margin: 2rem auto;
+            background: #111;
+            border: 2px solid #00ff41;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+        }
+
+        .terminal-header {
+            background: #222;
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid #00ff41;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .terminal-buttons {
+            display: flex;
+            gap: 0.3rem;
+        }
+
+        .btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff5f56;
+        }
+
+        .btn:nth-child(2) { background: #ffbd2e; }
+        .btn:nth-child(3) { background: #27ca3f; }
+
+        .terminal-title {
+            color: #888;
+            font-size: 0.8rem;
+            margin-left: auto;
+        }
+
+        .content {
+            padding: 2rem;
+        }
+
+        .prompt {
+            color: #00ff41;
+            font-weight: 600;
+        }
+
+        .cursor {
+            animation: blink 1s infinite;
+            background: #00ff41;
+            width: 8px;
+            height: 18px;
+            display: inline-block;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .section {
+            margin: 2rem 0;
+        }
+
+        .section-title {
+            color: #ff6b35;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            text-decoration: underline;
+        }
+
+        .ascii-art {
+            font-size: 0.6rem;
+            line-height: 1;
+            color: #666;
+            margin: 1rem 0;
+            white-space: pre;
+        }
+
+        .project-card {
+            border: 1px solid #333;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: rgba(0, 255, 65, 0.05);
+            position: relative;
+        }
+
+        .project-card::before {
+            content: '[PROJECT]';
+            position: absolute;
+            top: -8px;
+            left: 10px;
+            background: #111;
+            color: #ff6b35;
+            padding: 0 5px;
+            font-size: 0.7rem;
+        }
+
+        .tech-stack {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin: 0.5rem 0;
+        }
+
+        .tech-tag {
+            background: #222;
+            border: 1px solid #00ff41;
+            color: #00ff41;
+            padding: 0.2rem 0.5rem;
+            font-size: 0.7rem;
+            border-radius: 3px;
+        }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .contact-item {
+            border-left: 3px solid #00ff41;
+            padding-left: 1rem;
+        }
+
+        .glitch {
+            position: relative;
+            animation: glitch 3s infinite;
+        }
+
+        @keyframes glitch {
+            0%, 98% { transform: none; }
+            99% { transform: skew(-2deg); }
+            100% { transform: none; }
+        }
+
+        .typing-effect {
+            overflow: hidden;
+            white-space: nowrap;
+            animation: typing 3s steps(40, end), blink-cursor 0.75s step-end infinite;
+        }
+
+        @keyframes typing {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.1;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 1rem;
+            border-top: 1px solid #333;
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        a {
+            color: #00ff41;
+            text-decoration: none;
+            border-bottom: 1px dotted;
+        }
+
+        a:hover {
+            background: #00ff41;
+            color: #000;
+            padding: 0 2px;
+        }
+
+        @media (max-width: 768px) {
+            .terminal {
+                margin: 0.5rem;
+            }
+            
+            .content {
+                padding: 1rem;
+            }
+            
+            .ascii-art {
+                font-size: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="scanlines">
+    <canvas class="matrix-bg" id="matrix"></canvas>
+    
+    <div class="terminal">
+        <div class="terminal-header">
+            <div class="terminal-buttons">
+                <div class="btn"></div>
+                <div class="btn"></div>
+                <div class="btn"></div>
+            </div>
+            <div class="terminal-title">user@portfolio:~$</div>
+        </div>
+        
+        <div class="content">
+            <div class="prompt">root@dev-machine:~$ whoami</div>
+            
+            <div class="ascii-art">
+██████╗ ███████╗██████╗  ██████╗ ██████╗  █████╗     ██████╗ ███████╗██████╗ ███████╗██╗      █████╗ ████████╗████████╗ ██████╗ 
+██╔══██╗██╔════╝██╔══██╗██╔═══██╗██╔══██╗██╔══██╗    ██╔══██╗██╔════╝██╔══██╗██╔════╝██║     ██╔══██╗╚══██╔══╝╚══██╔══╝██╔═══██╗
+██║  ██║█████╗  ██████╔╝██║   ██║██████╔╝███████║    ██████╔╝█████╗  ██████╔╝█████╗  ██║     ███████║   ██║      ██║   ██║   ██║
+██║  ██║██╔══╝  ██╔══██╗██║   ██║██╔══██╗██╔══██║    ██╔══██╗██╔══╝  ██╔══██╗██╔══╝  ██║     ██╔══██║   ██║      ██║   ██║   ██║
+██████╔╝███████╗██████╔╝╚██████╔╝██║  ██║██║  ██║    ██║  ██║███████╗██████╔╝███████╗███████╗██║  ██║   ██║      ██║   ╚██████╔╝
+╚═════╝ ╚══════╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝    ╚═╝  ╚═╝╚══════╝╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝   ╚═╝      ╚═╝    ╚═════╝ 
+            </div>
+            
+            <div class="typing-effect">
+                > Front-End Developer | Angular Specialist | Mobile Developer
+            </div>
+            <div class="cursor"></div>
+            
+            <div class="section">
+                <div class="prompt">root@dev-machine:~$ cat about.txt</div>
+                <p>Olá! Sou Débora Rebelatto, desenvolvedora Front-End com sólida experiência em Angular e TypeScript. 
+                Atuo na construção de interfaces escaláveis, responsivas e com foco em performance e experiência do usuário (UX).</p>
+                
+                <p>Desde 2020 transformando ideias em código, com experiência em desenvolvimento mobile (Flutter) e 
+                aplicações web robustas. Apaixonada por clean code e boas práticas de desenvolvimento.</p>
+                
+                <p><strong>Localização:</strong> Chapecó/SC | <strong>Status:</strong> Disponível para trabalho remoto</p>
+            </div>
+
+            <div class="section">
+                <div class="prompt">root@dev-machine:~$ ls -la projects/</div>
+                <div class="section-title glitch">PROJETOS_RECENTES.exe</div>
+                
+                <div class="project-card">
+                    <h3>🅰️ Sistema de Gestão Interno</h3>
+                    <p>Desenvolvimento de aplicação interna robusta com AngularJS para otimização de processos</p>
+                    <div class="tech-stack">
+                        <span class="tech-tag">AngularJS</span>
+                        <span class="tech-tag">TypeScript</span>
+                        <span class="tech-tag">CI/CD</span>
+                        <span class="tech-tag">REST API</span>
+                    </div>
+                    <p><strong>Status:</strong> PRODUCTION | <strong>Tipo:</strong> Aplicação Corporativa</p>
+                </div>
+
+                <div class="project-card">
+                    <h3>📱 App Mobile Multiplataforma</h3>
+                    <p>Desenvolvimento de aplicativo mobile com componentes reutilizáveis e arquitetura escalável</p>
+                    <div class="tech-stack">
+                        <span class="tech-tag">Flutter</span>
+                        <span class="tech-tag">Dart</span>
+                        <span class="tech-tag">Android Native</span>
+                        <span class="tech-tag">Java</span>
+                    </div>
+                    <p><strong>Status:</strong> DEPLOYED | <strong>Tipo:</strong> Mobile Application</p>
+                </div>
+
+                <div class="project-card">
+                    <h3>⚡ Interface Escalável Angular</h3>
+                    <p>Desenvolvimento de interfaces modernas com Angular, foco em performance e UX</p>
+                    <div class="tech-stack">
+                        <span class="tech-tag">Angular 2+</span>
+                        <span class="tech-tag">TypeScript</span>
+                        <span class="tech-tag">SASS/SCSS</span>
+                        <span class="tech-tag">Jest</span>
+                        <span class="tech-tag">Cypress</span>
+                    </div>
+                    <p><strong>Status:</strong> ACTIVE_DEV | <strong>Período:</strong> Out/2022 - Atual</p>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="prompt">root@dev-machine:~$ cat skills.db</div>
+                <div class="section-title">STACK_TECNOLOGICO.cfg</div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                    <div>
+                        <h4 style="color: #ff6b35; margin-bottom: 0.5rem;">FRONTEND_PROTOCOLS:</h4>
+                        <ul style="list-style: none; padding-left: 1rem;">
+                            <li>→ Angular (2+) & AngularJS</li>
+                            <li>→ TypeScript & JavaScript</li>
+                            <li>→ HTML5, CSS3 & SASS/SCSS</li>
+                            <li>→ Jest & Cypress Testing</li>
+                            <li>→ UX/UI & Responsive Design</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 style="color: #ff6b35; margin-bottom: 0.5rem;">MOBILE & APIS:</h4>
+                        <ul style="list-style: none; padding-left: 1rem;">
+                            <li>→ Flutter & Dart</li>
+                            <li>→ Android Native (Java)</li>
+                            <li>→ REST & GraphQL APIs</li>
+                            <li>→ Git, GitHub & Azure DevOps</li>
+                            <li>→ Scrum/Kanban Methodologies</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 1.5rem;">
+                    <h4 style="color: #ff6b35; margin-bottom: 0.5rem;">CERTIFICATIONS_&_COURSES:</h4>
+                    <ul style="list-style: none; padding-left: 1rem; color: #888;">
+                        <li>→ Desenvolvimento Front-End com Angular - Alura</li>
+                        <li>→ Testes Automatizados com Jest e Cypress - Alura</li>
+                        <li>→ Arquitetura de Componentes com TypeScript - Alura</li>
+                        <li>→ Ciência da Computação - UFFS</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="prompt">root@dev-machine:~$ cat contact.info</div>
+                <div class="section-title">CANAIS_DE_COMUNICACAO.net</div>
+                
+                <div class="contact-grid">
+                    <div class="contact-item">
+                        <strong>EMAIL_PROTOCOL:</strong><br>
+                        <a href="mailto:deborarebelatto1@gmail.com">deborarebelatto1@gmail.com</a>
+                    </div>
+                    <div class="contact-item">
+                        <strong>GITHUB_REPO:</strong><br>
+                        <a href="https://github.com/debora-rebelatto">github.com/debora-rebelatto</a>
+                    </div>
+                    <div class="contact-item">
+                        <strong>LINKEDIN_NET:</strong><br>
+                        <a href="#">linkedin.com/in/deborarebelatto</a>
+                    </div>
+                    <div class="contact-item">
+                        <strong>LOCATION:</strong><br>
+                        Chapecó/SC - Remote Work
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="prompt">root@dev-machine:~$ cat experience.log</div>
+                <div class="section-title">EXPERIENCIA_PROFISSIONAL.history</div>
+                
+                <div style="border-left: 3px solid #00ff41; padding-left: 1rem; margin: 1rem 0;">
+                    <h4 style="color: #ff6b35;">Front-End Developer</h4>
+                    <p style="color: #888; font-size: 0.9rem;">Outubro 2022 – Atual</p>
+                    <ul style="list-style: none; padding-left: 0; margin: 0.5rem 0;">
+                        <li>→ Desenvolvimento de interfaces com Angular e TypeScript</li>
+                        <li>→ Integração com APIs REST e GraphQL</li>
+                        <li>→ Testes unitários/E2E (Jest e Cypress)</li>
+                        <li>→ Atuação em squads ágeis (Scrum/Kanban)</li>
+                    </ul>
+                </div>
+                
+                <div style="border-left: 3px solid #666; padding-left: 1rem; margin: 1rem 0;">
+                    <h4 style="color: #ff6b35;">Full Stack Developer</h4>
+                    <p style="color: #888; font-size: 0.9rem;">Novembro 2021 – Abril 2022</p>
+                    <ul style="list-style: none; padding-left: 0; margin: 0.5rem 0;">
+                        <li>→ Desenvolvimento de aplicações internas com AngularJS</li>
+                        <li>→ Implementação de testes automatizados e suporte a CI/CD</li>
+                    </ul>
+                </div>
+                
+                <div style="border-left: 3px solid #666; padding-left: 1rem; margin: 1rem 0;">
+                    <h4 style="color: #ff6b35;">Mobile Developer</h4>
+                    <p style="color: #888; font-size: 0.9rem;">Junho 2020 – Novembro 2021</p>
+                    <ul style="list-style: none; padding-left: 0; margin: 0.5rem 0;">
+                        <li>→ Desenvolvimento de app mobile com Flutter</li>
+                        <li>→ Manutenção de apps Android nativos (Java)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="prompt">root@dev-machine:~$ uptime</div>
+                <p style="color: #666;">System uptime: <span id="uptime"></span> | Experience: 4+ anos em desenvolvimento | Status: Ready for new challenges...</p>
+            </div>
+
+            <div class="footer">
+                <div class="prompt">root@dev-machine:~$ echo "Obrigado pela visita!"</div>
+                <p>© 2025 - Feito com ❤️ e muita nostalgia | Powered by vintage vibes and modern code</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Matrix rain effect
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const matrix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()";
+        const matrixArray = matrix.split("");
+
+        const fontSize = 10;
+        const columns = canvas.width / fontSize;
+
+        const drops = [];
+        for(let x = 0; x < columns; x++) {
+            drops[x] = 1;
+        }
+
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#00ff41';
+            ctx.font = fontSize + 'px monospace';
+
+            for(let i = 0; i < drops.length; i++) {
+                const text = matrixArray[Math.floor(Math.random() * matrixArray.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+
+        setInterval(draw, 35);
+
+        // Uptime counter
+        const startTime = new Date();
+        function updateUptime() {
+            const now = new Date();
+            const diff = now - startTime;
+            const hours = Math.floor(diff / 3600000);
+            const minutes = Math.floor((diff % 3600000) / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+
+            document.getElementById('uptime').textContent =
+                `${hours}h ${minutes}m ${seconds}s`;
+        }
+
+        setInterval(updateUptime, 1000);
+
+        // Resize canvas
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // Add some terminal-like interactions
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'F12') {
+                e.preventDefault();
+                alert('Access denied! Nice try, hacker ;)');
+            }
+        });
+    </script>
+</body>
+</html>
